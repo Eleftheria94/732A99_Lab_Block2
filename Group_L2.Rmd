@@ -9,43 +9,228 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, 
                       out.width = "100%")
 library(randomForest)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
 gene <- read.csv("geneexp.csv")
 ```
 
 ## Assignment 1
 
+### Question 1a)
+
+*Repeat the procedure above for 100 training datasets and report the mean and variance of the misclassification errors. In other words, create 100 training datasets, learn a random forest from each dataset, and compute the misclassification error in the same test dataset. Report results for when the random forest has 1, 10 and 100 trees.*
+
 ```{r 1.a}
-# Train
-
-x1<-runif(100)
-x2<-runif(100)
-trdata<-cbind(x1,x2)
-y<-as.numeric(x1<x2)
-trlabels<-as.factor(y)
-
 # Test
 set.seed(1234)
 
-x1<-runif(1000)
-x2<-runif(1000)
-tedata<-cbind(x1,x2)
-y<-as.numeric(x1<x2)
-telabels<-as.factor(y)
-plot(x1,x2,col=(y+1))
+x1 <- runif(1000)
+x2 <- runif(1000)
+tedata <- cbind(x1, x2)
+y <- as.numeric(x1 < x2)
+telabels <- as.factor(y)
+plot(x1, x2, col = (y + 1))
+
+# Train
+misclass_1 <- vector("numeric", length = 100L)
+misclass_10 <- vector("numeric", length = 100L)
+misclass_100 <- vector("numeric", length = 100L)
+for(i in 1:100){
+  set.seed(i)
+  x1 <- runif(100)
+  x2 <- runif(100)
+  trdata <- cbind(x1, x2)
+  y <- as.numeric(x1 < x2)
+  trlabels <- as.factor(y)
+  for(num_trees in c(1, 10, 100)){
+    forest <- randomForest(trlabels ~ x1 + x2, ntree = num_trees, nodesize = 25,
+                           keep.forest = TRUE)
+    pred <- predict(forest, tedata)
+    if(num_trees == 1){
+      misclass_1[i] <- (sum(telabels != pred)) / length(telabels)
+    } else if(num_trees == 10){
+      misclass_10[i] <- (sum(telabels != pred)) / length(telabels)
+    } else{
+      misclass_100[i] <- (sum(telabels != pred)) / length(telabels)
+    }
+  }
+}
+
+df <- melt(data.frame(misclass_1, misclass_10, misclass_100))
+mean_var <-data.frame(variable = c("misclass_1", "misclass_10", "misclass_100"), 
+                      mean = c(mean(misclass_1), mean(misclass_10), mean(misclass_100)),
+                      variance = c(var(misclass_1), var(misclass_10), var(misclass_100)))
+df %>% 
+  group_by(variable) %>% 
+  mutate(mean = mean(value), variance = var(value)) %>% 
+  ungroup() %>% 
+  ggplot(aes(variable, value * 100)) + geom_boxplot() + 
+  xlab("") + ylab("Misclassification error (%)") + 
+  scale_x_discrete(labels = c("1 tree", "10 trees", "100 trees")) + 
+  scale_y_continuous(limits = c(0, 100)) + theme_minimal() + 
+  theme(panel.grid = element_blank()) + 
+  stat_summary(geom = "text", fun = max,
+               aes(label = paste0("Mean error: ", sprintf("%1.3f", mean), "\n", 
+                                  "Variance of error: ", sprintf("%1.3f", variance))),
+               position = position_nudge(y = 10), size = 3.5) 
+
 
 ```
+
+### Question 1b)
+
+*b.	Repeat the exercise above but this time use the condition (x1<0.5) instead of (x1<x2) when producing the training and test datasets.*
 
 ```{r 1.b}
+# Test
+set.seed(1234)
+
+x1 <- runif(1000)
+x2 <- runif(1000)
+tedata <- cbind(x1, x2)
+y <- as.numeric(x1 < 0.5)
+telabels <- as.factor(y)
+plot(x1, x2, col = (y + 1))
+
+# Train
+misclass_1 <- vector("numeric", length = 100L)
+misclass_10 <- vector("numeric", length = 100L)
+misclass_100 <- vector("numeric", length = 100L)
+for(i in 1:100){
+  set.seed(i)
+  x1 <- runif(100)
+  x2 <- runif(100)
+  trdata <- cbind(x1, x2)
+  y <- as.numeric(x1 < 0.5)
+  trlabels <- as.factor(y)
+  for(num_trees in c(1, 10, 100)){
+    forest <- randomForest(trlabels ~ x1 + x2, ntree = num_trees, nodesize = 25, 
+                           keep.forest = TRUE)
+    pred <- predict(forest, tedata)
+    if(num_trees == 1){
+      misclass_1[i] <- (sum(telabels != pred)) / length(telabels)
+    } else if(num_trees == 10){
+      misclass_10[i] <- (sum(telabels != pred)) / length(telabels)
+    } else{
+      misclass_100[i] <- (sum(telabels != pred)) / length(telabels)
+    }
+  }
+}
+
+df <- melt(data.frame(misclass_1, misclass_10, misclass_100))
+df %>% 
+  group_by(variable) %>% 
+  mutate(mean = mean(value), variance = var(value)) %>% 
+  ungroup() %>% 
+  ggplot(aes(variable, value * 100)) + geom_boxplot() + 
+  xlab("") + ylab("Misclassification error (%)") + 
+  scale_x_discrete(labels = c("1 tree", "10 trees", "100 trees")) + 
+  scale_y_continuous(limits = c(0, 100)) + theme_minimal() + 
+  theme(panel.grid = element_blank()) + 
+  stat_summary(geom = "text", fun = max,
+               aes(label = paste0("Mean error: ", sprintf("%1.3f", mean), "\n", 
+                                  "Variance of error: ", sprintf("%1.3f", variance))),
+               position = position_nudge(y = 10), size = 3.5) 
+
 ```
 
+### Question 1c)
+
+*c.	Repeat the exercise above but this time use the condition ((x1<0.5 & x2<0.5) | (x1>0.5 & x2>0.5)) instead of (x1<x2) when producing the training and test datasets. Unlike above, use nodesize = 12 for this exercise.*
+
 ```{r 1.c}
+# Test
+set.seed(1234)
+
+x1 <- runif(1000)
+x2 <- runif(1000)
+tedata <- cbind(x1, x2)
+y <- as.numeric(((x1 < 0.5 & x2 < 0.5) | (x1 > 0.5 & x2 > 0.5)) )
+telabels <- as.factor(y)
+plot(x1, x2, col = (y + 1))
+
+# Train
+misclass_1 <- vector("numeric", length = 100L)
+misclass_10 <- vector("numeric", length = 100L)
+misclass_100 <- vector("numeric", length = 100L)
+for(i in 1:100){
+  set.seed(i)
+  x1 <- runif(100)
+  x2 <- runif(100)
+  trdata <- cbind(x1, x2)
+  y <- as.numeric(((x1 < 0.5 & x2 < 0.5) | (x1 > 0.5 & x2 > 0.5)) )
+  trlabels <- as.factor(y)
+  for(num_trees in c(1, 10, 100)){
+    forest <- randomForest(trlabels ~ x1 + x2, ntree = num_trees, nodesize = 12, 
+                           keep.forest = TRUE)
+    pred <- predict(forest, tedata)
+    if(num_trees == 1){
+      misclass_1[i] <- (sum(telabels != pred)) / length(telabels)
+    } else if(num_trees == 10){
+      misclass_10[i] <- (sum(telabels != pred)) / length(telabels)
+    } else{
+      misclass_100[i] <- (sum(telabels != pred)) / length(telabels)
+    }
+  }
+}
+
+df <- melt(data.frame(misclass_1, misclass_10, misclass_100))
+df %>% 
+  group_by(variable) %>% 
+  mutate(mean = mean(value), variance = var(value)) %>% 
+  ungroup() %>% 
+  ggplot(aes(variable, value * 100)) + geom_boxplot() + 
+  xlab("") + ylab("Misclassification error (%)") + 
+  scale_x_discrete(labels = c("1 tree", "10 trees", "100 trees")) + 
+  scale_y_continuous(limits = c(0, 100)) + theme_minimal() + 
+  theme(panel.grid = element_blank()) + 
+  stat_summary(geom = "text", fun = max,
+               aes(label = paste0("Mean error: ", sprintf("%1.3f", mean), "\n", 
+                                  "Variance of error: ", sprintf("%1.3f", variance))),
+               position = position_nudge(y = 10), size = 3.5) 
+
 ```
+
+### Question 1d)
+
+* a) *What happens with the mean and variance of the error rate when the number of trees in the random forest grows ?*
+Across all three scenarios, it can be seen that the mean error rate decreases as
+the number of trees increases, which can also be seen for the variance of the error,
+except in the first case, where the variance of 10 trees is slightly lower than
+that of 100 trees (6 decimal places). The reason the mean error rate is decreasing
+with increasing amount of trees can be explained by the majority voting principle, 
+where more trees will, on average, predict better than an average individual tree. 
+The same should also be applied to the variance to an extent, but the variance will
+eventually increase with larger forests as it overfits the data, which leads to 
+poor generalizability on new data. This phenomenon is known as the bias-variance
+trade-off. 
+
+* b) *The third dataset represents a slightly more complicated classification problem than the first one. Still, you should get better performance for it when using sufficient trees in the random forest. Explain why you get better performance.*
+The first classification problem has, as observed from the graphs, a linear 
+decision boundary with two distinct class, which is a simple problem in nature.
+However, it can require many trees in a random forest to classify accurately due
+to the large amount of splits needed to partition the feature space into distinct
+classification regions, i.e., hypercubes. 
+
+On the contrary, the second classification problem has four distinct regions, of
+which the diagonal elements belong to the same class. This problem should have
+better performance than the aforementioned problem, since it requires less partitions
+of the feature space in order to achieve accurate classification.
+
+
+
+* c) *Why is it desirable to have low error variance?*
+Having low error variance is desirable because it reduces the variability of the 
+estimated error, thus leading to more accurate estimations around the mean. A
+high error variance can be thought of having bad aim in a game of darts; the darts
+end up all over the place, whereas low variance has the darts centered in a specific
+region. 
+
 
 ```{r 1.d}
 ```
 
-```{r 1.e}
-```
 
 ## Assignment 2
 
