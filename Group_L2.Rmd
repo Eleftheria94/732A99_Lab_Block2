@@ -1,0 +1,68 @@
+---
+title: "732A99 Lab Block 2"
+author: "Rasmus Säfvenberg, Eleftheria Chatzitheodoridou & Syed Muhammad Arslan Haider"
+date: '2020-11-14'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, 
+                      out.width = "100%")
+library(randomForest)
+gene <- read.csv("geneexp.csv")
+```
+
+## Assignment 1
+
+```{r 1.a}
+# Train
+
+x1<-runif(100)
+x2<-runif(100)
+trdata<-cbind(x1,x2)
+y<-as.numeric(x1<x2)
+trlabels<-as.factor(y)
+
+# Test
+set.seed(1234)
+
+x1<-runif(1000)
+x2<-runif(1000)
+tedata<-cbind(x1,x2)
+y<-as.numeric(x1<x2)
+telabels<-as.factor(y)
+plot(x1,x2,col=(y+1))
+
+```
+
+```{r 1.b}
+```
+
+```{r 1.c}
+```
+
+```{r 1.d}
+```
+
+```{r 1.e}
+```
+
+## Assignment 2
+
+```{r 2}
+
+```
+
+## Assignment 3
+
+```{r 3.1}
+```
+
+```{r 3.2}
+```
+
+```{r 3.3}
+```
+
+```{r 3.4}
+```
