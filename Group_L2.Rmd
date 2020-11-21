@@ -12,7 +12,7 @@ library(randomForest)
 library(ggplot2)
 library(reshape2)
 library(dplyr)
-gene <- read.csv("geneexp.csv")
+library(pamr)
 ```
 
 ## Assignment 1
@@ -309,16 +309,61 @@ plot(llik[1:it], type="o")
 
 ```
 
-## Assignment 3
+## Assignment 3: High-Dimensional Methods
+
+*Data file* **geneexp.csv** *contains information about gene expression of three different cell types (column Cell Type). These cell types are CD4 and CD8 (two sorts of T cells) and CD19 (B cells). The aim of this assignment is to classify cells to the appropriate cell types using gene expressions and discover relevant genes for the given cell types.*
+
+*1. Divide data into training and test sets (70/30) without scaling. Perform* **nearest shrunken centroid classification** *of training data in which the threshold is chosen by cross-validation. Provide a* **centroid plot** *and interpret it. How many genes were selected by the method? What meaning do positive and negative values have in the centroid plot? Can it happen that all values in the centroid plot are positive for some gene?*
 
 ```{r 3.1}
+# Read data
+gene <- read.csv("geneexp.csv", header =  TRUE, row.names = 1, sep = ",")
+
+# Data pre-processing
+CD4 <- gene[grep('^CD4', rownames(gene)),] #T cells
+CD8 <- gene[grep('^CD8', rownames(gene)),] # T cells
+CD19 <- gene[grep('^CD19', rownames(gene)),] # B cells
+
+# Divide data into training and test(70/30, no scaling)
+n <- dim(gene)[1]
+set.seed(12345)
+id <- sample(1:n, floor(n*0.7))
+train <- gene[id,]
+#y_train <- as.matrix(gene[id, ])
+test <- gene[-id,]
+#y_test <- as.matrix(gene[-id, ])
+
+# Create model
+model <- pamr.train(train, threshold = seq(0, 4, 0.1)) # BUT WAIT
+
+# Choose threshold by cross-validation
+cvmodel <- pamr.cv(model, train)
+
+# Misclassification Error plot
+pamr.plotcv(cvmodel)
+
+# Print cvmodel
+print(cvmodel)
+
 ```
+
+*2.	List the names of the 2 most contributing genes and find their alternative names in Google. Then, by checking this webpage <https://panglaodb.se/markers.html> find out whether these two genes are “marker genes” for given cell types. Report the test error of the model.*
 
 ```{r 3.2}
 ```
 
+*3.	Compute the test error and the number of the contributing features for the following methods fitted to the training data:*
+
+   a. *Elastic net with the binomial response and* $\alpha = 0.5$ *in which penalty is selected by the cross-validation.*
+   
+   b. *Support vector machine with “vanilladot” kernel.*
+   
+*Compare the results of these models with the results of the nearest shrunken centroids (make a comparative table). Which model would you prefer and why?*
+
 ```{r 3.3}
 ```
+
+*4. Implement Benjamini-Hochberg method for the original data in which you test each cell type versus the remaining ones, and use `t.test()` for computing p-values. Present plots showing p-values and the rejection area for each cell type and interpret them. How many genes correspond to the rejected hypotheses for each cell type?*
 
 ```{r 3.4}
 ```
