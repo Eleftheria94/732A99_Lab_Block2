@@ -228,10 +228,6 @@ end up all over the place, whereas low variance has the darts centered in a spec
 region. 
 
 
-```{r 1.d}
-```
-
-
 ## Assignment 2
 
 Your task is to implement the EM algorithm for mixtures of multivariate Bernoulli distributions. Please use the R template below to solve the assignment. Then, use your implementation to show what happens when your mixture model has too few and too many components, i.e. set K=2,3,4 and compare results. Please provide a short explanation as well.
@@ -316,6 +312,8 @@ plot(llik[1:it], type="o")
 *1. Divide data into training and test sets (70/30) without scaling. Perform* **nearest shrunken centroid classification** *of training data in which the threshold is chosen by cross-validation. Provide a* **centroid plot** *and interpret it. How many genes were selected by the method? What meaning do positive and negative values have in the centroid plot? Can it happen that all values in the centroid plot are positive for some gene?*
 
 ```{r 3.1}
+# NSC "shrinks" each of the class centroids towardS the overall centroid for all classes by a  threshold. This shrinkage makes the classifier more accurate by eliminating the effect of noisy genes and as a result it does automatic gene selection. The gene expression profile of a new sample is compared to  each of these class centroids. The class whose centroid that it is closest to, in squared distance, is the predicted class for that new sample. This part is the same as the usual nearest centroid rule. This type of classifier is sensitive to a small disturbance and performance is inferior to contemporary classifiers such as neural networks, support vector machines, and decision trees where  complex criteria is used for classification. 
+
 # Read data
 gene <- read.csv("geneexp.csv", header =  TRUE, row.names = 1, sep = ",")
 
@@ -324,20 +322,38 @@ CD4 <- gene[grep('^CD4', rownames(gene)),] #T cells
 CD8 <- gene[grep('^CD8', rownames(gene)),] # T cells
 CD19 <- gene[grep('^CD19', rownames(gene)),] # B cells
 
+CD4_train <- train[grep('^CD4', rownames(train))]
+CD8_train <- train[grep('^CD8', rownames(train))]
+CD19_train <- train[grep('^CD19', rownames(train))]
+
+CD4_test <- test[grep('^CD4', rownames(test))]
+CD8_test <- test[grep('^CD8', rownames(test))]
+CD19_test <- test[grep('^CD19', rownames(test))]
+
 # Divide data into training and test(70/30, no scaling)
 n <- dim(gene)[1]
 set.seed(12345)
 id <- sample(1:n, floor(n*0.7))
 train <- gene[id,]
-#y_train <- as.matrix(gene[id, ])
 test <- gene[-id,]
-#y_test <- as.matrix(gene[-id, ])
+
+# train
+#rownames(train) <- 1:nrow(train)
+x_train <- t(train[,unlist(-CD19_train)]) # remove dependent variable
+y_train <- train[[unlist(CD19_train)]] # vector of the dependent variable
+mygene_train <- list(x = x_train, y = as.factor(y_train), geneid = as.character(1:nrow(x_train)), genenames = rownames(x_train))
+
+# test
+#rownames(test) <- 1:nrow(test)
+x_test <- t(test[,-CD19_test])
+y_test <- test[[CD19_test]]
+mygene_test <- list(x = x_test, y = as.factor(y_test), geneid = as.character(1:nrow(x_test)), genenames = rownames(x_test))
 
 # Create model
-model <- pamr.train(train, threshold = seq(0, 4, 0.1)) # BUT WAIT
+model <- pamr.train(mygene_train, threshold = seq(0, 4, 0.1))
 
 # Choose threshold by cross-validation
-cvmodel <- pamr.cv(model, train)
+cvmodel <- pamr.cv(model, mygene_train)
 
 # Misclassification Error plot
 pamr.plotcv(cvmodel)
