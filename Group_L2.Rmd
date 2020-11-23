@@ -312,7 +312,9 @@ plot(llik[1:it], type="o")
 *1. Divide data into training and test sets (70/30) without scaling. Perform* **nearest shrunken centroid classification** *of training data in which the threshold is chosen by cross-validation. Provide a* **centroid plot** *and interpret it. How many genes were selected by the method? What meaning do positive and negative values have in the centroid plot? Can it happen that all values in the centroid plot are positive for some gene?*
 
 ```{r 3.1}
-# NSC "shrinks" each of the class centroids towardS the overall centroid for all classes by a  threshold. This shrinkage makes the classifier more accurate by eliminating the effect of noisy genes and as a result it does automatic gene selection. The gene expression profile of a new sample is compared to  each of these class centroids. The class whose centroid that it is closest to, in squared distance, is the predicted class for that new sample. This part is the same as the usual nearest centroid rule. This type of classifier is sensitive to a small disturbance and performance is inferior to contemporary classifiers such as neural networks, support vector machines, and decision trees where  complex criteria is used for classification. 
+# NSC "shrinks" each of the class centroids towardS the overall centroid for all classes by a  threshold. This shrinkage makes the classifier more accurate by eliminating the effect of noisy genes and as a result it does automatic gene selection. The gene expression profile of a new sample is compared to  each of these class centroids. The class whose centroid that it is closest to, in squared distance, is the predicted class for that new sample. This part is the same as the usual nearest centroid rule. This type of classifier is sensitive to a small disturbance and performance is inferior to contemporary classifiers such as neural networks, support vector machines, and decision trees where  complex criteria is used for classification. [2]
+
+#Advantages: 1) it can make the classifier more accurate by reducing the effect of noisy genes, 2) it does automatic gene selection. In particular, if a gene is shrunk to zero for all classes, then it is eliminated from the prediction rule. Alternatively, it may be set to zero for all classes except one, and we learn that high or low expression for that gene characterizes that class. [1]
 
 # Read data
 gene <- read.csv("geneexp.csv", header =  TRUE, row.names = 1, sep = ",")
@@ -383,3 +385,29 @@ print(cvmodel)
 
 ```{r 3.4}
 ```
+
+
+## References
+
+1. What is nearest shrunken centroid classification? [2020]
+
+[<http://statweb.stanford.edu/~tibs/PAM/Rdist/howwork.html>]
+
+2. Nearest Shrunken Centroid as Feature Selection of Microarray Data [2020]
+
+[<https://www.researchgate.net/publication/221206450_Nearest_Shrunken_Centroid_as_Feature_Selection_of_Microarray_Data>]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
