@@ -320,17 +320,9 @@ plot(llik[1:it], type="o")
 gene <- read.csv("geneexp.csv", header =  TRUE, row.names = 1, sep = ",")
 
 # Data pre-processing
-CD4 <- gene[grep('^CD4', rownames(gene)),] #T cells
-CD8 <- gene[grep('^CD8', rownames(gene)),] # T cells
-CD19 <- gene[grep('^CD19', rownames(gene)),] # B cells
-
-CD4_train <- train[grep('^CD4', rownames(train))]
-CD8_train <- train[grep('^CD8', rownames(train))]
-CD19_train <- train[grep('^CD19', rownames(train))]
-
-CD4_test <- test[grep('^CD4', rownames(test))]
-CD8_test <- test[grep('^CD8', rownames(test))]
-CD19_test <- test[grep('^CD19', rownames(test))]
+# CD4 <- gene[grep('^CD4', rownames(gene)),] #T cells
+# CD8 <- gene[grep('^CD8', rownames(gene)),] # T cells
+# CD19 <- gene[grep('^CD19', rownames(gene)),] # B cells
 
 # Divide data into training and test(70/30, no scaling)
 n <- dim(gene)[1]
@@ -340,15 +332,15 @@ train <- gene[id,]
 test <- gene[-id,]
 
 # train
-#rownames(train) <- 1:nrow(train)
-x_train <- t(train[,unlist(-CD19_train)]) # remove dependent variable
-y_train <- train[[unlist(CD19_train)]] # vector of the dependent variable
+rownames(train) <- 1:nrow(train)
+x_train <- t(train[, -2086]) # remove dependent variable
+y_train <- train[[2086]] # vector of the dependent variable
 mygene_train <- list(x = x_train, y = as.factor(y_train), geneid = as.character(1:nrow(x_train)), genenames = rownames(x_train))
 
 # test
-#rownames(test) <- 1:nrow(test)
-x_test <- t(test[,-CD19_test])
-y_test <- test[[CD19_test]]
+rownames(test) <- 1:nrow(test)
+x_test <- t(test[,-2086])
+y_test <- test[[2086]]
 mygene_test <- list(x = x_test, y = as.factor(y_test), geneid = as.character(1:nrow(x_test)), genenames = rownames(x_test))
 
 # Create model
@@ -398,11 +390,94 @@ print(cvmodel)
 [<https://www.researchgate.net/publication/221206450_Nearest_Shrunken_Centroid_as_Feature_Selection_of_Microarray_Data>]
 
 
+## Appendix
+
+```{r, echo = TRUE, eval = FALSE}
+
+## Assignment 1: Ensemble Methods
+
+# 1.a
+
+
+
+# 1.b
+
+
+
+
+# 1.c 
+
+
+
+
+# 1.d.a
 
 
 
 
 
+# 1.d.b
+
+
+
+
+
+# 1.d.c
+
+
+
+
+## Assignment 2: Mixture Models
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Assignment 3: High-Dimensional Methods
+
+# 1
+
+
+
+
+# 2
+
+
+
+
+
+# 3.a
+
+
+
+
+
+# 3.b
+
+
+
+
+
+# 4
+
+
+
+
+```
 
 
 
