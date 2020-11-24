@@ -13,6 +13,8 @@ library(ggplot2)
 library(reshape2)
 library(dplyr)
 library(pamr)
+library(glmnet)
+library(kernlab)
 ```
 
 ## Assignment 1
@@ -333,8 +335,8 @@ test <- gene[-id,]
 
 # train
 rownames(train) <- 1:nrow(train)
-x_train <- t(train[, -2086]) # remove dependent variable
-y_train <- train[[2086]] # vector of the dependent variable
+x_train <- t(train[, -2086]) # remove last column
+y_train <- train[[2086]] 
 mygene_train <- list(x = x_train, y = as.factor(y_train), geneid = as.character(1:nrow(x_train)), genenames = rownames(x_train))
 
 # test
@@ -347,7 +349,7 @@ mygene_test <- list(x = x_test, y = as.factor(y_test), geneid = as.character(1:n
 model <- pamr.train(mygene_train, threshold = seq(0, 4, 0.1))
 
 # Choose threshold by cross-validation
-cvmodel <- pamr.cv(model, mygene_train)
+cvmodel <- pamr.cv(model, mygene_train) 
 
 # Misclassification Error plot
 pamr.plotcv(cvmodel)
@@ -355,11 +357,40 @@ pamr.plotcv(cvmodel)
 # Print cvmodel
 print(cvmodel)
 
+# Optimal threshold is the one that gives the minimum cross-validated misclassification error rate
+
+optimal_threshold <- cvmodel$threshold[which.min(cvmodel$error)] # returns 0.4...
+
+# Centroid plot
+pamr.plotcen(model, mygene_train, threshold = optimal_threshold)
+
+# Number of features:
+n_features <- pamr.listgenes(model, mygene_train, threshold = optimal_threshold) # 1668 (nrow(n_features))
 ```
+For this task we are asked to perform Nearest Shrunken Centroid Classification of training, non-scaled data in which the threshold is chosen by cross- validation. After the execution of the method, we choose the threshold that yields the minimum misclassification error. Since there are 3 thresholds satisfying this condition, we pick the one that includes the least amount of variables, which equals to 0.6. Essentially, this method improves the accuracy of the classifier by reducing the effect of noisy genes and performs automatic gene selection. In particular, "if a gene is shrunk to zero for all classes, then it is eliminated from the prediction rule. Alternatively, it may be set to zero for all classes except one, and we learn that high or low expression for that gene characterizes that class" [1].
+
+The centroid plot shows the distance of each feature/gene from the three classes (CD4, CD8, CD19). Each centroid has the overall centroid subtracted; hence, what we see are contrasts. The red column corresponds to class CD19, the green one to CD4 and the blue one to CD8. Moreover, a centroid plot reports which non-zero variables are the most significant ones for the classifier. Since we have a total of 2086 features out of which 1668 were selected with an optimal threshold, it is to be expected that our graph looks "bloated'.
+
+
+
+
+
 
 *2.	List the names of the 2 most contributing genes and find their alternative names in Google. Then, by checking this webpage <https://panglaodb.se/markers.html> find out whether these two genes are “marker genes” for given cell types. Report the test error of the model.*
 
 ```{r 3.2}
+
+# List 2 most contributing genes
+best_2 <- as.matrix(colnames(gene)[as.numeric(n_features[,1])][1:2])
+best_2 # "ENSG00000019582", "ENSG00000204287"
+
+# Calculate test error
+pred_NSC <- pamr.predict(model, newx = x_test, threshold = optimal_threshold) 
+conf_pred_model <- table(y_test, pred_NSC)
+#cm_pred_model
+test_error_NSC <- (conf_pred_model[1,2] + conf_pred_model[2,1]) / sum(conf_pred_model)
+test_error_NSC
+
 ```
 
 *3.	Compute the test error and the number of the contributing features for the following methods fitted to the training data:*
@@ -371,23 +402,82 @@ print(cvmodel)
 *Compare the results of these models with the results of the nearest shrunken centroids (make a comparative table). Which model would you prefer and why?*
 
 ```{r 3.3}
+
+# Elastic net
+
+set.seed(1234)
+
+elastic_net <- cv.glmnet(x = t(x_train), y = y_train, family = "binomial", alpha = 0.5) #fitting the model
+
+pred_elastic_net <- predict.cv.glmnet(elastic_net, newx = t(x_test), type = "class", s = "lambda.min") 
+
+# Calculate test error
+conf_elastic_net  <- table(y_test, pred_elastic_net)
+test_error_EN <- (conf_elastic_net[1,2] + conf_elastic_net[2,1]) / sum(conf_elastic_net)
+
+# Support Vector Machine with "vanilladot" kernel
+
+SVM  <- ksvm(x = x_train, y = y_train, kernel = "vanilladot", scale = FALSE) 
+                
+SVM_pred <- predict(svm, newdata = x_test)
+
+# Calculate test error
+conf_SVM <- table(y_test, SVM_pred)
+test_error_SVM <- (conf_SVM[1,2] + conf_SVM[2,1]) / sum(conf_SVM)
+
+# Compare the 3 methods by creating a table with the values of the test error
+df <- data.frame("Nearest Shrunk Centroid" = test_error_NSC,
+                 "Elastic net" = test_error_EN,                     # getting test errors for every method used
+                  "SVM" = test_error_SVM)
+
+cf <- as.matrix(coef(elastic_net, elastic_net$lambda.min))
+
+features_NSC <- nrow(n_features)
+features_SVM  <- length(coef(SVM)[[1]]) #dim(gene)[2] - 1 #SVM@nSV  # getting all features for every method
+features_EN <- length(names(cf[cf != 0,]))
+
+features <- c(features_NSC, features_EN, features_SVM)              # combine features+test errors in a data frame
+df <- rbind(features, df)
+
+rownames(df)[1] <- "Selected Features"
+rownames(df)[2] <- "Test Error"
+
+df
 ```
 
 *4. Implement Benjamini-Hochberg method for the original data in which you test each cell type versus the remaining ones, and use `t.test()` for computing p-values. Present plots showing p-values and the rejection area for each cell type and interpret them. How many genes correspond to the rejected hypotheses for each cell type?*
 
 ```{r 3.4}
+
+# Implement Benjamini-Hochberg for original data
+
+gene <- read.csv("geneexp.csv", header =  TRUE, row.names = 1, sep = ",")
+
+p_value <- c()
+for(i in 1:2086) {
+  x <- gene[,i]
+  res <- t.test(x ~ gene[[2086]], data = gene) ##??which variable to choose
+  p <- res$p.value
+  p_value[i] <- p
+}
+
+
 ```
 
 
 ## References
 
-1. What is nearest shrunken centroid classification? [2020]
+1. Statweb. What is nearest shrunken centroid classification? [2020]
 
 [<http://statweb.stanford.edu/~tibs/PAM/Rdist/howwork.html>]
 
-2. Nearest Shrunken Centroid as Feature Selection of Microarray Data [2020]
+2. Research Gate. Nearest Shrunken Centroid as Feature Selection of Microarray Data [2020]
 
 [<https://www.researchgate.net/publication/221206450_Nearest_Shrunken_Centroid_as_Feature_Selection_of_Microarray_Data>]
+
+3. Datacamp. Regularization:Ridge, Lasso & Elastic Net [2020]
+
+[<https://www.datacamp.com/community/tutorials/tutorial-ridge-lasso-elastic-net>]
 
 
 ## Appendix
