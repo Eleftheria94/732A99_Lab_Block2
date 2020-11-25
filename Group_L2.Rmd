@@ -407,9 +407,9 @@ test_error_NSC
 
 set.seed(1234)
 
-elastic_net <- cv.glmnet(x = t(x_train), y = y_train, family = "binomial", alpha = 0.5) #fitting the model
+elastic_net <- cv.glmnet(x = t(x_train), y = y_train, family = "multinomial", alpha = 0.5) #fitting the model, works onlly on multinomial
 
-pred_elastic_net <- predict.cv.glmnet(elastic_net, newx = t(x_test), type = "class", s = "lambda.min") 
+pred_elastic_net <- predict(elastic_net, newx = t(x_test), type = "class", s = "lambda.min") 
 
 # Calculate test error
 conf_elastic_net  <- table(y_test, pred_elastic_net)
@@ -417,9 +417,9 @@ test_error_EN <- (conf_elastic_net[1,2] + conf_elastic_net[2,1]) / sum(conf_elas
 
 # Support Vector Machine with "vanilladot" kernel
 
-SVM  <- ksvm(x = x_train, y = y_train, kernel = "vanilladot", scale = FALSE) 
+SVM  <- ksvm(x = x_train, kernel = "vanilladot", scale = FALSE) 
                 
-SVM_pred <- predict(svm, newdata = x_test)
+SVM_pred <- predict.ksvm(SVM, newdata = x_test) #fucking hell
 
 # Calculate test error
 conf_SVM <- table(y_test, SVM_pred)
