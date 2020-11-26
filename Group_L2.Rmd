@@ -2,8 +2,14 @@
 title: "732A99 Lab Block 2"
 author: "Rasmus Säfvenberg, Eleftheria Chatzitheodoridou & Syed Muhammad Arslan Haider"
 date: '2020-11-14'
-output: html_document
+output: 
+  html_document: default
+  toc: yes
+  pdf_document: default
 ---
+
+## Statement of Contribution
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, 
@@ -17,11 +23,9 @@ library(glmnet)
 library(kernlab)
 ```
 
-## Assignment 1
+## Assignment 1: Ensemble Methods
 
-### Question 1a)
-
-*Repeat the procedure above for 100 training datasets and report the mean and variance of the misclassification errors. In other words, create 100 training datasets, learn a random forest from each dataset, and compute the misclassification error in the same test dataset. Report results for when the random forest has 1, 10 and 100 trees.*
+*1.a Repeat the procedure above for 100 training datasets and report the mean and variance of the misclassification errors. In other words, create 100 training datasets, learn a random forest from each dataset, and compute the misclassification error in the* **same** *test dataset. Report results for when the random forest has 1, 10 and 100 trees.*
 
 ```{r 1.a}
 # Test
@@ -38,29 +42,29 @@ plot(x1, x2, col = (y + 1))
 misclass_1 <- vector("numeric", length = 100L)
 misclass_10 <- vector("numeric", length = 100L)
 misclass_100 <- vector("numeric", length = 100L)
-for(i in 1:100){
+for(i in 1:100) {
   set.seed(i)
   x1 <- runif(100)
   x2 <- runif(100)
   trdata <- cbind(x1, x2)
   y <- as.numeric(x1 < x2)
   trlabels <- as.factor(y)
-  for(num_trees in c(1, 10, 100)){
+  for(num_trees in c(1, 10, 100)) {
     forest <- randomForest(trlabels ~ x1 + x2, ntree = num_trees, nodesize = 25,
                            keep.forest = TRUE)
     pred <- predict(forest, tedata)
-    if(num_trees == 1){
+    if(num_trees == 1) {
       misclass_1[i] <- (sum(telabels != pred)) / length(telabels)
-    } else if(num_trees == 10){
+    } else if(num_trees == 10) {
       misclass_10[i] <- (sum(telabels != pred)) / length(telabels)
-    } else{
+    } else {
       misclass_100[i] <- (sum(telabels != pred)) / length(telabels)
     }
   }
 }
 
 df <- melt(data.frame(misclass_1, misclass_10, misclass_100))
-mean_var <-data.frame(variable = c("misclass_1", "misclass_10", "misclass_100"), 
+mean_var <- data.frame(variable = c("misclass_1", "misclass_10", "misclass_100"), 
                       mean = c(mean(misclass_1), mean(misclass_10), mean(misclass_100)),
                       variance = c(var(misclass_1), var(misclass_10), var(misclass_100)))
 df %>% 
@@ -80,9 +84,7 @@ df %>%
 
 ```
 
-### Question 1b)
-
-*b.	Repeat the exercise above but this time use the condition (x1<0.5) instead of (x1<x2) when producing the training and test datasets.*
+*1b. Repeat the exercise above but this time use the condition (`x1 < 0.5`) instead of (`x1 < x2`) when producing the training* **and** *test datasets.*
 
 ```{r 1.b}
 # Test
@@ -137,9 +139,7 @@ df %>%
 
 ```
 
-### Question 1c)
-
-*c.	Repeat the exercise above but this time use the condition ((x1<0.5 & x2<0.5) | (x1>0.5 & x2>0.5)) instead of (x1<x2) when producing the training and test datasets. Unlike above, use nodesize = 12 for this exercise.*
+*1c. Repeat the exercise above but this time use the condition (`(x1 < 0.5 & x2 < 0.5) | (x1 > 0.5 & x2 > 0.5)`) instead of (`x1 < x2`) when producing the training* **and** *test datasets. Unlike above, use `nodesize = 12` for this exercise.*
 
 ```{r 1.c}
 # Test
@@ -194,7 +194,7 @@ df %>%
 
 ```
 
-### Question 1d)
+### 1d
 
 * a) *What happens with the mean and variance of the error rate when the number of trees in the random forest grows ?*
 Across all three scenarios, it can be seen that the mean error rate decreases as
@@ -210,7 +210,7 @@ trade-off.
 
 * b) *The third dataset represents a slightly more complicated classification problem than the first one. Still, you should get better performance for it when using sufficient trees in the random forest. Explain why you get better performance.*
 The first classification problem has, as observed from the graphs, a linear 
-decision boundary with two distinct class, which is a simple problem in nature.
+decision boundary with two distinct classes, which is a simple problem in nature.
 However, it can require many trees in a random forest to classify accurately due
 to the large amount of splits needed to partition the feature space into distinct
 classification regions, i.e., hypercubes. 
@@ -220,8 +220,6 @@ which the diagonal elements belong to the same class. This problem should have
 better performance than the aforementioned problem, since it requires less partitions
 of the feature space in order to achieve accurate classification.
 
-
-
 * c) *Why is it desirable to have low error variance?*
 Having low error variance is desirable because it reduces the variability of the 
 estimated error, thus leading to more accurate estimations around the mean. A
@@ -230,10 +228,9 @@ end up all over the place, whereas low variance has the darts centered in a spec
 region. 
 
 
-## Assignment 2
+## Assignment 2: Mixture Models
 
-Your task is to implement the EM algorithm for mixtures of multivariate Bernoulli distributions. Please use the R template below to solve the assignment. Then, use your implementation to show what happens when your mixture model has too few and too many components, i.e. set K=2,3,4 and compare results. Please provide a short explanation as well.
-
+*Your task is to implement the EM algorithm for mixtures of multivariate Bernoulli distributions. Please use the R template below to solve the assignment. Then, use your implementation to show what happens when your mixture model has too few and too many components, i.e. set* $K = 2, 3, 4$ *and compare results. Please provide a short explanation as well.*
 
 ```{r 2}
 
@@ -241,54 +238,54 @@ set.seed(1234567890)
 
 max_it <- 100 # max number of EM iterations
 min_change <- 0.1 # min change in log likelihood between two consecutive EM iterations
-N=1000 # number of training points
-D=10 # number of dimensions
-x <- matrix(nrow=N, ncol=D) # training data
+N <- 1000 # number of training points
+D <- 10 # number of dimensions
+x <- matrix(nrow = N, ncol = D) # training data
 
 true_pi <- vector(length = 3) # true mixing coefficients
-true_mu <- matrix(nrow=3, ncol=D) # true conditional distributions
-true_pi=c(1/3, 1/3, 1/3)
-true_mu[1,]=c(0.5,0.6,0.4,0.7,0.3,0.8,0.2,0.9,0.1,1)
-true_mu[2,]=c(0.5,0.4,0.6,0.3,0.7,0.2,0.8,0.1,0.9,0)
-true_mu[3,]=c(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5)
-plot(true_mu[1,], type="o", col="blue", ylim=c(0,1))
-points(true_mu[2,], type="o", col="red")
-points(true_mu[3,], type="o", col="green")
+true_mu <- matrix(nrow = 3, ncol = D) # true conditional distributions
+true_pi <- c(1/3, 1/3, 1/3)
+true_mu[1,] <- c(0.5, 0.6, 0.4, 0.7, 0.3, 0.8, 0.2, 0.9, 0.1, 1)
+true_mu[2,] <- c(0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9, 0)
+true_mu[3,] <- c(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5)
+plot(true_mu[1,], type = "o", col = "blue", ylim = c(0,1))
+points(true_mu[2,], type = "o", col = "red")
+points(true_mu[3,], type = "o", col = "green")
 
 # Producing the training data
 for(n in 1:N) {
-k <- sample(1:3,1,prob=true_pi)
+k <- sample(1:3, 1, prob = true_pi)
 for(d in 1:D) {
-x[n,d] <- rbinom(1,1,true_mu[k,d])
-}
+x[n,d] <- rbinom(1, 1, true_mu[k,d])
+ }
 }
 
-K=3 # number of guessed components
-z <- matrix(nrow=N, ncol=K) # fractional component assignments
+K <- 3 # number of guessed components
+z <- matrix(nrow = N, ncol = K) # fractional component assignments
 pi <- vector(length = K) # mixing coefficients
-mu <- matrix(nrow=K, ncol=D) # conditional distributions
+mu <- matrix(nrow = K, ncol = D) # conditional distributions
 llik <- vector(length = max_it) # log likelihood of the EM iterations
 
 # Random initialization of the paramters
-pi <- runif(K,0.49,0.51)
+pi <- runif(K, 0.49, 0.51)
 pi <- pi / sum(pi)
 for(k in 1:K) {
-mu[k,] <- runif(D,0.49,0.51)
+mu[k,] <- runif(D, 0.49, 0.51)
 }
 pi
 mu
 
 for(it in 1:max_it) {
-plot(mu[1,], type="o", col="blue", ylim=c(0,1))
-points(mu[2,], type="o", col="red")
-points(mu[3,], type="o", col="green")
-#points(mu[4,], type="o", col="yellow")
+plot(mu[1,], type = "o", col = "blue", ylim = c(0,1))
+points(mu[2,], type = "o", col = "red")
+points(mu[3,], type = "o", col = "green")
+#points(mu[4,], type = "o", col = "yellow")
 Sys.sleep(0.5)
 
 # E-step: Computation of the fractional component assignments
 # Your code here
 
-#Log likelihood computation.
+# Log likelihood computation.
 # Your code here
 
 cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
@@ -302,8 +299,7 @@ flush.console()
 pi
 
 mu
-plot(llik[1:it], type="o")
-
+plot(llik[1:it], type = "o")
 
 ```
 
