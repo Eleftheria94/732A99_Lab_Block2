@@ -346,7 +346,7 @@ y_test <- test[[2086]]
 mygene_test <- list(x = x_test, y = as.factor(y_test), geneid = as.character(1:nrow(x_test)), genenames = rownames(x_test))
 
 # Create model
-model <- pamr.train(mygene_train, threshold = seq(0, 4, 0.1))
+model <- pamr.train(mygene_train)
 
 # Choose threshold by cross-validation
 cvmodel <- pamr.cv(model, mygene_train) 
@@ -366,6 +366,7 @@ pamr.plotcen(model, mygene_train, threshold = optimal_threshold)
 
 # Number of features:
 n_features <- pamr.listgenes(model, mygene_train, threshold = optimal_threshold) # 1668 (nrow(n_features))
+
 ```
 For this task we are asked to perform Nearest Shrunken Centroid Classification of training, non-scaled data in which the threshold is chosen by cross- validation. After the execution of the method, we choose the threshold that yields the minimum misclassification error. Since there are 3 thresholds satisfying this condition, we pick the one that includes the least amount of variables, which equals to 0.6. Essentially, this method improves the accuracy of the classifier by reducing the effect of noisy genes and performs automatic gene selection. In particular, "if a gene is shrunk to zero for all classes, then it is eliminated from the prediction rule. Alternatively, it may be set to zero for all classes except one, and we learn that high or low expression for that gene characterizes that class" [1].
 
@@ -388,7 +389,7 @@ best_2 # "ENSG00000019582", "ENSG00000204287"
 pred_NSC <- pamr.predict(model, newx = x_test, threshold = optimal_threshold) 
 conf_pred_model <- table(y_test, pred_NSC)
 #cm_pred_model
-test_error_NSC <- (conf_pred_model[1,2] + conf_pred_model[2,1]) / sum(conf_pred_model)
+test_error_NSC <- sum(diag(conf_pred_model)) / sum(conf_pred_model)
 test_error_NSC
 
 ```
@@ -407,34 +408,37 @@ test_error_NSC
 
 set.seed(1234)
 
-elastic_net <- cv.glmnet(x = t(x_train), y = y_train, family = "multinomial", alpha = 0.5) #fitting the model, works onlly on multinomial
+elastic_net <- cv.glmnet(x = t(x_train), y = y_train, family = "multinomial", alpha = 0.5) #fitting the model, works only on multinomial
 
 pred_elastic_net <- predict(elastic_net, newx = t(x_test), type = "class", s = "lambda.min") 
 
 # Calculate test error
 conf_elastic_net  <- table(y_test, pred_elastic_net)
-test_error_EN <- (conf_elastic_net[1,2] + conf_elastic_net[2,1]) / sum(conf_elastic_net)
+test_error_EN <- sum(diag(conf_elastic_net)) / sum(conf_elastic_net)
 
 # Support Vector Machine with "vanilladot" kernel
 
-SVM  <- ksvm(x = x_train, kernel = "vanilladot", scale = FALSE) 
+SVM  <- ksvm(x = t(x_train), y = as.factor(y_train),  kernel = "vanilladot", scale = FALSE) 
                 
-SVM_pred <- predict.ksvm(SVM, newdata = x_test) #fucking hell
+SVM_pred <- predict(SVM, newdata = t(x_test))
 
 # Calculate test error
 conf_SVM <- table(y_test, SVM_pred)
-test_error_SVM <- (conf_SVM[1,2] + conf_SVM[2,1]) / sum(conf_SVM)
+test_error_SVM <- sum(diag(conf_SVM)) / sum(conf_SVM)
 
 # Compare the 3 methods by creating a table with the values of the test error
 df <- data.frame("Nearest Shrunk Centroid" = test_error_NSC,
                  "Elastic net" = test_error_EN,                     # getting test errors for every method used
                   "SVM" = test_error_SVM)
 
-cf <- as.matrix(coef(elastic_net, elastic_net$lambda.min))
+cf <- coef(elastic_net, elastic_net$lambda.min)
+cf <- as.matrix(cbind(cf[[1]], cf[[2]], cf[[3]]))
+cf2 <- unique(which(cf != 0, arr.ind = T)[,1])
 
 features_NSC <- nrow(n_features)
 features_SVM  <- length(coef(SVM)[[1]]) #dim(gene)[2] - 1 #SVM@nSV  # getting all features for every method
-features_EN <- length(names(cf[cf != 0,]))
+features_EN <- length(cf2)
+
 
 features <- c(features_NSC, features_EN, features_SVM)              # combine features+test errors in a data frame
 df <- rbind(features, df)
