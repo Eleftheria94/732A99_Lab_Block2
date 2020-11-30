@@ -346,7 +346,7 @@ model <- pamr.train(mygene_train)
 cvmodel <- pamr.cv(model, mygene_train) 
 
 # Misclassification Error plot
-pamr.plotcv(cvmodel)
+#pamr.plotcv(cvmodel)
 
 # Print cvmodel
 print(cvmodel)
@@ -380,7 +380,7 @@ best_2 # "ENSG00000019582", "ENSG00000204287"
 pred_NSC <- pamr.predict(model, newx = x_test, threshold = optimal_threshold) 
 conf_pred_model <- table(y_test, pred_NSC)
 #conf_pred_model
-test_error_NSC <- sum(diag(conf_pred_model)) / sum(conf_pred_model)
+test_error_NSC <- 1 - sum(diag(conf_pred_model)) / sum(conf_pred_model)
 test_error_NSC
 
 ```
@@ -415,7 +415,7 @@ pred_elastic_net <- predict(elastic_net, newx = t(x_test), type = "class", s = "
 
 # Calculate test error
 conf_elastic_net  <- table(y_test, pred_elastic_net)
-test_error_EN <- sum(diag(conf_elastic_net)) / sum(conf_elastic_net)
+test_error_EN <- 1- sum(diag(conf_elastic_net)) / sum(conf_elastic_net)
 
 # Support Vector Machine with "vanilladot" kernel
 
@@ -425,7 +425,7 @@ SVM_pred <- predict(SVM, newdata = t(x_test))
 
 # Calculate test error
 conf_SVM <- table(y_test, SVM_pred)
-test_error_SVM <- sum(diag(conf_SVM)) / sum(conf_SVM)
+test_error_SVM <- 1 - sum(diag(conf_SVM)) / sum(conf_SVM)
 
 # Compare the 3 methods by creating a table with the values of the test error
 df <- data.frame("Nearest Shrunken Centroid" = test_error_NSC,
@@ -448,7 +448,7 @@ rownames(df) <- c("Selected Features", "Test Error")
 df
 ```
 
-The model with the lowest misclassification error rate is the Nearest Shrunken Centroid one between the 3 methods. But in order to choose which model performed best we would also need to look at the number of features that were selected. Nearest Shrunken Centroid and SVM have the same and the highest amount of variables selected which makes them inefficient as they render complex models. Therefore, our choice is automatically limited to NSC and Elastic Net. Having taken both criteria into consideration, we would choose Elastic Net because, even though the test error is not the lowest, the difference between 144 and 30 variables is significant.
+The model with the lowest misclassification error rate is the Support Vector Machine (SVM) one between the 3 methods. But in order to choose which model performed best we would also need to look at the number of features that were selected. Nearest Shrunken Centroid and SVM have the same and the highest amount of variables selected which makes them inefficient as they render complex models. Therefore, our choice is automatically limited to SVM and Elastic Net. Having taken both criteria into consideration, we would choose Elastic Net because, even though the test error is not the lowest, the difference between 144 and 30 variables is significant.
 
 *4. Implement Benjamini-Hochberg method for the original data in which you test each cell type versus the remaining ones, and use `t.test()` for computing p-values. Present plots showing p-values and the rejection area for each cell type and interpret them. How many genes correspond to the rejected hypotheses for each cell type?*
 
