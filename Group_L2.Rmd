@@ -355,7 +355,7 @@ For this task we are asked to perform Nearest Shrunken Centroid Classification o
 
 The centroid plot shows the distance of each feature/gene from the three classes (CD4, CD8, CD19). Each centroid has the overall centroid subtracted; hence, what we see are contrasts. The red column corresponds to class CD19, the green one to CD4 and the blue one to CD8. Moreover, a centroid plot reports which non-zero variables are the most significant ones for the classifier. In our plot, we see 25 of them selected for the optimal threshold.
 
-Positive and negative values indicate gene expression. More specifically, a positive value implies a strong gene expression for a particular cell type and a positive contribution to the classification.
+Positive and negative values indicate gene expression. More specifically, a positive value implies a strong gene expression for a particular cell type and a positive contribution to the classification. It is our opinion that the values of a gene cannot be all positive. This would translate to all the values of this gene being far from the centroids. In a mathematical context, when the algorithm reaches the shrinkage step, that is the threshold reduction towards the mean, it would render the contribution of this gene to 0, thus eliminating it from the centroid plot.
 
 *2.	List the names of the 2 most contributing genes and find their alternative names in Google. Then, by checking this webpage <https://panglaodb.se/markers.html> find out whether these two genes are “marker genes” for given cell types. Report the test error of the model.*
 
@@ -490,10 +490,15 @@ col19 <- ifelse(CD19_pvalue <= CD19_pvalue[BH_method(CD19_pvalue)], "red", "blue
 CD19_rej <- which(col19 == "red") # rejected features for CD19 cell type, 307
 
 plot(CD4_pvalue, col = col4, xlab = "Features", ylab = "CD4 p-value", font.lab = 2)
+abline(abline(v = BH_method(CD4_pvalue), col = "black"))
 legend("topleft", legend = c("Rejected Features", "Not Rejected Features"), col = c("red", "blue"), lwd = 1, cex = 0.8)
+
 plot(CD8_pvalue, col = col8, xlab = "Features", ylab = "CD8 p-value", font.lab = 2)
+abline(abline(v = BH_method(CD8_pvalue), col = "black"))
 legend("topleft", legend = c("Rejected Features", "Not Rejected Features"), col = c("red", "blue"), lwd = 1, cex = 0.8)
+
 plot(CD19_pvalue, col= col19, xlab = "Features", ylab = "CD19 p-value", font.lab = 2)
+abline(abline(v = BH_method(CD19_pvalue), col = "black"))
 legend("topleft", legend = c("Rejected Features", "Not Rejected Features"), col = c("red", "blue"), lwd = 1, cex = 0.8)
 
 ```
@@ -932,10 +937,15 @@ col19 <- ifelse(CD19_pvalue <= CD19_pvalue[BH_method(CD19_pvalue)], "red", "blue
 CD19_rej <- which(col19 == "red") # rejected features for CD19 cell type, 307
 
 plot(CD4_pvalue, col = col4, xlab = "Features", ylab = "CD4 p-value", font.lab = 2)
+abline(abline(v = BH_method(CD4_pvalue), col = "black"))
 legend("topleft", legend = c("Rejected Features", "Not Rejected Features"), col = c("red", "blue"), lwd = 1, cex = 0.8)
+
 plot(CD8_pvalue, col = col8, xlab = "Features", ylab = "CD8 p-value", font.lab = 2)
+abline(abline(v = BH_method(CD8_pvalue), col = "black"))
 legend("topleft", legend = c("Rejected Features", "Not Rejected Features"), col = c("red", "blue"), lwd = 1, cex = 0.8)
+
 plot(CD19_pvalue, col= col19, xlab = "Features", ylab = "CD19 p-value", font.lab = 2)
+abline(abline(v = BH_method(CD19_pvalue), col = "black"))
 legend("topleft", legend = c("Rejected Features", "Not Rejected Features"), col = c("red", "blue"), lwd = 1, cex = 0.8)
 
 ```
