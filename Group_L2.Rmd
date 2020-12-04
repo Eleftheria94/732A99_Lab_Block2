@@ -353,7 +353,7 @@ n_features <- nrow(features)
 
 For this task we are asked to perform Nearest Shrunken Centroid Classification of training, non-scaled data in which the threshold is chosen by cross- validation. After the execution of the method, we choose the threshold that yields the minimum misclassification error. Since there are 2 thresholds satisfying this condition, we pick the one that includes the least amount of variables, which equals to $\approx 8.8158$. Essentially, this method improves the accuracy of the classifier by reducing the effect of noisy genes and performs automatic gene selection. In particular, "if a gene is shrunk to zero for all classes, then it is eliminated from the prediction rule. Alternatively, it may be set to zero for all classes except one, and we learn that high or low expression for that gene characterizes that class" [1].
 
-The centroid plot shows the distance of each feature/gene from the three classes (CD4, CD8, CD19). Each centroid has the overall centroid subtracted; hence, what we see are contrasts. The red column corresponds to class CD19, the green one to CD4 and the blue one to CD8. Moreover, a centroid plot reports which non-zero variables are the most significant ones for the classifier. In our plot, we see 25 of them selected for the optimal threshold.
+The centroid plot shows the distance of each feature/gene from the three classes (CD4, CD8, CD19). Each centroid has the overall centroid subtracted; hence, what we see are contrasts. The red column corresponds to class CD19, the green one to CD4 and the blue one to CD8. Moreover, a centroid plot reports which non-zero variables are the most significant ones for the classifier. In our plot, we see 11 of them selected for the optimal threshold.
 
 Positive and negative values indicate gene expression. More specifically, a positive value implies a strong gene expression for a particular cell type and a positive contribution to the classification. It is our opinion that the values of a gene cannot be all positive. This would translate to all the values of this gene being far from the centroids. In a mathematical context, when the algorithm reaches the shrinkage step, that is the threshold reduction towards the mean, it would render the contribution of this gene to 0, thus eliminating it from the centroid plot.
 
@@ -382,7 +382,7 @@ test_error_NSC
 
 Both of these genes belong to B cells therefore to the CD19 cell type and are "marker genes" for these cells. The second (HLA-DRA) can be found only in humans, whilst the first (CD74) can be encountered both in humans and mice. In general, B cells are a type of white blood cell and their functionality is of autoimmune nature by secreting antibodies. [4]
 
-The test error of the model is equal to: 0.8888889
+The test error of the model is equal to: 0.1444444
 
 *3.	Compute the test error and the number of the contributing features for the following methods fitted to the training data:*
 
