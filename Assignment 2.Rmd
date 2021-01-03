@@ -1,0 +1,170 @@
+---
+title: "732A99 Lab Block 2"
+author: "Eleftheria Chatzitheodoridou"
+date: '2020-01-03'
+output: 
+  pdf_document: default
+  toc: yes
+  html_document: default
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, 
+                      out.width = "100%")
+library(ggplot2)
+library(gridExtra)
+```
+
+## Assignment 2: Mixture Models
+
+```{r}
+# Function for the plot of estimated pi 
+pi_plot <- function(df) {
+  ggplot(df) +
+    theme_classic() +
+    geom_col(aes(x = x, y = y, fill = x, color = "white")) +
+    labs(title = "Estimated Pi", x = "Distributions", y = "Pi" ) +
+    theme(legend.position = "none")
+}
+
+# Function for the plot of estimated mu 
+mu_plot <- function(mat) {
+  my_rainbow <- rainbow(n = nrow(mat))
+  mu_plot <- plot(mat[1,], type = "o", col = my_rainbow[1], ylim = c(0, 1))
+  for (i in 2:nrow(mat)) {  
+    points(mat[i,], type = "o", col = my_rainbow[i])
+  }
+}
+
+set.seed(1234567890)
+
+max_it <- 100                                                                             # max number of EM iterations
+min_change <- 0.1                                  # min change in log likelihood between two consecutive EM iterations
+N <- 1000                                                                                 # number of training points
+D <- 10                                                                                   # number of dimensions
+x <- matrix(nrow = N, ncol = D)                                                           # training data
+
+true_pi <- vector(length = 3)                                                             # true mixing coefficients
+true_mu <- matrix(nrow = 3, ncol = D)                                                     # true conditional distributions
+true_pi = c(1/3, 1/3, 1/3)
+true_mu[1,] <- c(0.5, 0.6, 0.4, 0.7, 0.3, 0.8, 0.2, 0.9, 0.1, 1)
+true_mu[2,] <- c(0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9, 0)
+true_mu[3,] <- c(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5)
+plot(true_mu[1,], type = "o", col = "blue", ylim = c(0, 1))
+points(true_mu[2,], type = "o", col = "red")
+points(true_mu[3,], type = "o", col = "green")
+
+# Plot for true_pi and true_mu
+df <- data.frame(x = c(1:3), y = true_pi)
+ggplot(df) +
+  theme_classic() +
+  geom_col(aes(x = x, y = y, fill = x, color = "white")) +
+  labs(title = "True Pi", x = "Distributions", y = "Pi" ) +
+  theme(legend.position = "none")
+mu_plot(true_mu)
+
+# Producing the training data
+for(n in 1:N) {
+  k <- sample(1:3, 1, prob = true_pi)
+  for(d in 1:D) {
+    x[n, d] <- rbinom(1, 1, true_mu[k, d])
+  }
+}
+
+# Function for EM algorithm 
+# Input K = number of components 
+# output plots for best estimated pi, mu and max likelihood
+EM_algorithm = function(K){
+z <- matrix(nrow = N, ncol = K)                                                          # fractional component assignments
+pi <- vector(length = K)                                                                 # mixing coefficients
+mu <- matrix(nrow = K, ncol = D)                                                         # conditional distributions
+llik <- vector(length = max_it)                                                          # log likelihood of the EM iterations
+
+# Random initialization of the parameters
+pi <- runif(K, 0.49, 0.51)
+pi <- pi / sum(pi)
+for(k in 1:K) {
+  mu[k,] <- runif(D, 0.49, 0.51)
+}
+pi
+mu
+
+for(it in 1:max_it) {
+  Sys.sleep(0.5)
+  # E-step: Computation of the fractional component assignments
+  # Loop for all observations 
+  for (i in 1:N) {
+    temp_z <- c()
+    
+    # Loop for all components
+    for (k in 1:K) {
+      
+      # Calculate Bernoulli prob
+      temp_mu <- mu[k,]^x[i,]
+      temp_mu2 <- (1 - mu[k,])^(1 - x[i,])
+      temp_z <- c(temp_z, prod(temp_mu, temp_mu2))
+      
+    }
+    z[i,] <- (pi*temp_z) / sum(pi*temp_z) 
+  } 
+  
+  # Maximum likelihood
+  # Probability  for each Bernoulli
+  p_mu <- exp(x %*% t(log(mu)) + (1-x) %*% t(log(1 - mu)))
+  
+  # Convert pi vector to a matrix
+  ml_pi <- matrix(pi, nrow = 1000, ncol = K, byrow = TRUE)
+  
+  # Calculate max likelihood 
+  llik[it] <- sum(log(rowSums(p_mu * ml_pi)))
+  
+  # Print log likelihood for every iteration
+  #cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
+  #flush.console() 
+  
+  # Stop if log likelihood has not changed significantly
+  if (llik[it] - llik[it - 1] < min_change && it > 2) {
+    break()
+  }
+  
+  # M-step: ML parameter estimation from the data and fractional component assignments
+  prob <- c(colSums(z))
+  pi <- prob / N
+  mu <- (t(z) %*% x) / prob
+}
+
+# Plot for estimated mu
+mu_plot(mu)
+
+# Plot for maximum likelihood
+likelihood <- data.frame(x = 1:it, y = llik[1:it])
+likelihood_plot <- ggplot(likelihood, aes(x = x, y = y)) +
+                   theme_classic() +
+                   geom_line() +
+                   geom_point() 
+
+
+# Bar plot for estimated pi
+df_pi <- data.frame(x = c(1:K), y = pi)
+plot_pi <- pi_plot(df = df_pi)
+
+grid.arrange(likelihood_plot, plot_pi, ncol = 2)
+
+}
+
+EM_algorithm(2)
+EM_algorithm(3)
+EM_algorithm(4)
+
+```
+
+## Analysis:
+
+First of all, we have to mention that in real life we will not know the distributions which the data belongs to and we will use the estimators to make predictions for this. In this case, supposing that we do not know the number of distributions, we can be sure which $K$ to choose from the information we have. More specific, for $K = 2$, the probabilities are almost the same and the two $\mu$ values follow the same trend as the first two true $\mu's$. However, the last true $\mu$ is always stable with value 0.5, and this is the reason why the plot for $K = 2$ does not seem wrong. So
+from this information is difficult to reject $K = 2$.
+
+For $K = 3$ there is a logical split between the populations, with higher probability the first one at around 0.4 and the other two close to 0.3. All the components had estimated correctly with a high percentage and the $\mu$ plot looks like the plot for the true $\mu$.
+
+Finally, for $K = 4$, we can observe that while the probabilities for each component are close each other, the $\mu$ values have remarkable differences.
+More specifically, we can observe two different trends, one for the first and the third $\mu$ and one for the second and fourth. This plot is the only one we can easily reject, because it is clear that the $\mu's$ for the  third and the fourth component follow totally different trends, trying to
+"translate" the third true $\mu$ value.
